@@ -30,7 +30,7 @@ const tempMovieData = [
       "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
   },
   {
-    imdbID: "tt0133053",
+    imdbID: "tt0133093",
     Title: "The Matrix",
     Year: "1999",
     Poster:
@@ -72,36 +72,16 @@ const tempWatchedData = [
 ];
 
 const average = (arr) =>
-  Math.round(arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0));
+  arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
-export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
-
-  return (
-    <>
-      <Navbar>
-        <SearchBox />
-        <NumResults movies={movies} />
-      </Navbar>
-      <Main>
-        <Box>
-          <MovieList movies={movies} />
-        </Box>
-        <Box>
-          <Summary watched={watched} />
-          <MovieList movies={watched} />
-        </Box>
-      </Main>
-    </>
-  );
-}
-
-function Navbar({ children }) {
+function Navbar({ query, setQuery, movies }) {
   return (
     <nav className="nav-bar">
       <Logo />
-      {children}
+      <InputBox query={query} setQuery={setQuery} movies={movies} />
+      <p className="num-results">
+        Found <strong>{movies.length}</strong> results
+      </p>
     </nav>
   );
 }
@@ -109,22 +89,13 @@ function Navbar({ children }) {
 function Logo() {
   return (
     <div className="logo">
-      <span
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <img style={{ height: "30px", width: "30px" }} src="logo.png" />
-      </span>
-      <h1>Cinema Chronicle</h1>
+      <span role="img">🍿</span>
+      <h1>usePopcorn</h1>
     </div>
   );
 }
 
-function SearchBox() {
-  const [query, setQuery] = useState("");
+function InputBox({ query, setQuery, movies }) {
   return (
     <input
       className="search"
@@ -136,26 +107,38 @@ function SearchBox() {
   );
 }
 
-function NumResults({ movies }) {
+export default function App() {
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState(tempMovieData);
+
   return (
-    <p className="num-results">
-      Found <strong>{movies.length}</strong> results
-    </p>
+    <>
+      <Navbar query={query} setQuery={setQuery} movies={movies} />
+      <Main movies={movies} />
+    </>
   );
 }
 
-export function Main({ children }) {
-  return <main className="main">{children}</main>;
+export function Main({ movies }) {
+  return (
+    <main className="main">
+      <Box1 movies={movies} />
+      <Box2 />
+    </main>
+  );
 }
 
-function Box({ children }) {
-  const [isOpen, setIsOpen] = useState(true);
+function Box1({ movies }) {
+  const [isOpen1, setIsOpen1] = useState(true);
   return (
     <div className="box">
-      <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
-        {isOpen ? "–" : "+"}
+      <button
+        className="btn-toggle"
+        onClick={() => setIsOpen1((open) => !open)}
+      >
+        {isOpen1 ? "–" : "+"}
       </button>
-      {isOpen && children}
+      {isOpen1 && <MovieList movies={movies} />}
     </div>
   );
 }
@@ -164,7 +147,7 @@ function MovieList({ movies }) {
   return (
     <ul className="list">
       {movies?.map((movie) => (
-        <ListItem movie={movie} key={movie.imdbID} />
+        <ListItem movie={movie} />
       ))}
     </ul>
   );
@@ -185,7 +168,29 @@ function ListItem({ movie }) {
   );
 }
 
-function WatchedMovieList() {
+function Box2() {
+  const [watched, setWatched] = useState(tempWatchedData);
+
+  const [isOpen2, setIsOpen2] = useState(true);
+
+  return (
+    <div className="box">
+      <button
+        className="btn-toggle"
+        onClick={() => setIsOpen2((open) => !open)}
+      >
+        {isOpen2 ? "–" : "+"}
+      </button>
+      {isOpen2 && (
+        <>
+          <Summary watched={watched} />
+          <WatchedMovieList watched={watched} />
+        </>
+      )}
+    </div>
+  );
+}
+function WatchedMovieList({ watched }) {
   return (
     <ul className="list">
       {watched.map((movie) => (
