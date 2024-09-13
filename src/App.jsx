@@ -120,12 +120,10 @@ export default function App() {
 }
 
 export function Main({ movies }) {
-  const [watched, setWatched] = useState(tempWatchedData);
-
   return (
     <main className="main">
       <Box1 movies={movies} />
-      <Box2 movie={movies} watched={watched} />
+      <Box2 />
     </main>
   );
 }
@@ -170,7 +168,9 @@ function ListItem({ movie }) {
   );
 }
 
-function Box2({ movie, watched }) {
+function Box2() {
+  const [watched, setWatched] = useState(tempWatchedData);
+
   const [isOpen2, setIsOpen2] = useState(true);
 
   return (
