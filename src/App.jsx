@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -75,13 +75,25 @@ const average = (arr) =>
   Math.round(arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0));
 
 export default function App() {
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState(tempMovieData);
   const [watched, setWatched] = useState(tempWatchedData);
+  const [tempValue, setTempValue] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("https://api.restful-api.dev/objects");
+      console.log(res);
+      setTempValue(false);
+    })();
+  });
+
+  console.log("on every render");
 
   return (
     <>
       <Navbar>
-        <SearchBox />
+        <SearchBox query={query} setQuery={setQuery} />
         <NumResults movies={movies} />
       </Navbar>
       <Main>
@@ -90,7 +102,7 @@ export default function App() {
         </Box>
         <Box>
           <Summary watched={watched} />
-          <MovieList movies={watched} />
+          <WatchedMovieList movies={watched} />
         </Box>
       </Main>
     </>
@@ -123,8 +135,7 @@ function Logo() {
   );
 }
 
-function SearchBox() {
-  const [query, setQuery] = useState("");
+function SearchBox({ query, setQuery }) {
   return (
     <input
       className="search"
@@ -162,7 +173,7 @@ function Box({ children }) {
 
 function MovieList({ movies }) {
   return (
-    <ul className="list">
+    <ul className="list list-movies">
       {movies?.map((movie) => (
         <ListItem movie={movie} key={movie.imdbID} />
       ))}
@@ -185,11 +196,11 @@ function ListItem({ movie }) {
   );
 }
 
-function WatchedMovieList() {
+function WatchedMovieList({ movies }) {
   return (
-    <ul className="list">
-      {watched.map((movie) => (
-        <WatchListItem movie={movie} />
+    <ul className="list list-movies">
+      {movies.map((movie) => (
+        <WatchListItem movie={movie} key={movie.imdbID} />
       ))}
     </ul>
   );
