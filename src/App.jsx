@@ -1,94 +1,73 @@
-import { useEffect, useState } from "react";
-
-const tempMovieData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt0133093",
-    Title: "The Matrix",
-    Year: "1999",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt6751668",
-    Title: "Parasite",
-    Year: "2019",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt6751688",
-    Title: "Parasite",
-    Year: "2019",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt0133053",
-    Title: "The Matrix",
-    Year: "1999",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-  },
-];
-
-const tempWatchedData = [
-  {
-    imdbID: "tt0133093",
-    Title: "The Matrix",
-    Year: "1999",
-    runtime: 148,
-    imdbRating: 8.8,
-    userRating: 10,
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-    runtime: 148,
-    imdbRating: 8.8,
-    userRating: 10,
-  },
-  {
-    imdbID: "tt0088763",
-    Title: "Back to the Future",
-    Year: "1985",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
-    runtime: 116,
-    imdbRating: 8.5,
-    userRating: 9,
-  },
-];
+import { useEffect, useRef, useState } from "react";
+import StarRating from "./starRating";
 
 const average = (arr) =>
   Math.round(arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0));
 
 export default function App() {
-  const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
-  const [tempValue, setTempValue] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("https://api.restful-api.dev/objects");
-      console.log(res);
-      setTempValue(false);
-    })();
+  const [query, setQuery] = useState("game of thrones");
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState(() => {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+    // This will only be called on initial render on component mount
   });
 
-  console.log("on every render");
+  /*
+  Never do this 
+    const [watched, setWatched] = useState( localStorage.getItem("watched"));
+    // Never call function directly inside useState 
+    // Otherwise it will be called in every rerender
+    // Pass a callback fun only 
+  */
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
+
+  const controller = new AbortController();
+
+  useEffect(() => {
+    async function fetchMovie() {
+      try {
+        setIsLoading(true);
+        setError("");
+        setSelectedId("");
+        const res = await fetch(
+          `https://www.omdbapi.com/?i=tt3896198&apikey=979a10ec&s=${query}`,
+          {
+            signal: controller.signal,
+          }
+        );
+        const movies = await res.json();
+        if (movies.Error) {
+          console.log("error throne", Object.keys(movies), movies.Error);
+          throw new Error("Movie not found");
+        }
+        setMovies(movies.Search);
+      } catch (error) {
+        if (error.name != "AbortError ") return;
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (query.length < 3) {
+      setMovies([]);
+
+      setIsLoading(false);
+      setError("");
+      return;
+    }
+    fetchMovie();
+    return () => {
+      controller.abort();
+    };
+  }, [query]);
 
   return (
     <>
@@ -98,11 +77,26 @@ export default function App() {
       </Navbar>
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {isLoading && <Loader />}
+          {!isLoading && !error && (
+            <MovieList movies={movies} setSelectedId={setSelectedId} />
+          )}
+          {error && <ErrorMessage error={error} />}
         </Box>
         <Box>
-          <Summary watched={watched} />
-          <WatchedMovieList movies={watched} />
+          {selectedId ? (
+            <MovieDetail
+              watched={watched}
+              setWatched={setWatched}
+              selectedId={selectedId}
+              setSelectedId={setSelectedId}
+            />
+          ) : (
+            <>
+              <Summary watched={watched} />
+              <WatchedMovieList movies={watched} />
+            </>
+          )}
         </Box>
       </Main>
     </>
@@ -136,6 +130,35 @@ function Logo() {
 }
 
 function SearchBox({ query, setQuery }) {
+  /* This is not the right way to select react elm
+   This is more of a imperative approach
+   We need to select elm using react declarative approach
+
+  useEffect(() => {
+    const inputBox = document.querySelector(".search");
+    inputBox.focus();
+  }, []);
+  */
+
+  const inputEl = useRef(null);
+  //  Correct place to use ref while selecting el is inside
+  // useEffect as the el is available after Browser paint happens
+
+  // IMP: you are not allowed to mutate the ref in render logic
+  useEffect(() => {
+    inputEl.current.focus();
+
+    function callback(e) {
+      if (document.activeElement === inputEl.current) return;
+
+      if (e.code === "Enter") {
+        inputEl.current.focus();
+        setQuery("");
+      }
+    }
+    document.addEventListener("keydown", callback);
+    return () => document.removeEventListener("keydown", callback);
+  }, []);
   return (
     <input
       className="search"
@@ -143,6 +166,7 @@ function SearchBox({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={inputEl}
     />
   );
 }
@@ -150,7 +174,7 @@ function SearchBox({ query, setQuery }) {
 function NumResults({ movies }) {
   return (
     <p className="num-results">
-      Found <strong>{movies.length}</strong> results
+      Found <strong>{movies?.length}</strong> results
     </p>
   );
 }
@@ -170,20 +194,147 @@ function Box({ children }) {
     </div>
   );
 }
+function Loader() {
+  return (
+    <div className="loader">
+      <h3>Loading....</h3>
+    </div>
+  );
+}
 
-function MovieList({ movies }) {
+function ErrorMessage({ error }) {
+  return (
+    <div className="error">
+      <h3>{error}❌</h3>
+    </div>
+  );
+}
+
+function MovieList({ movies, setSelectedId }) {
   return (
     <ul className="list list-movies">
       {movies?.map((movie) => (
-        <ListItem movie={movie} key={movie.imdbID} />
+        <ListItem
+          movie={movie}
+          setSelectedId={setSelectedId}
+          key={movie.imdbID}
+        />
       ))}
     </ul>
   );
 }
 
-function ListItem({ movie }) {
+function MovieDetail({ watched, setWatched, selectedId, setSelectedId }) {
+  const [movie, setMovie] = useState({});
+  const [rating, setRating] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const ratedCount = useRef(0);
+
+  useEffect(() => {
+    (async () => {
+      setIsLoading(true);
+      setRating(0);
+      const res = await fetch(
+        `https://www.omdbapi.com/?apikey=979a10ec&i=${selectedId}`
+      );
+      const movies = await res.json();
+      console.log(movies);
+      setMovie(movies);
+      setIsLoading(false);
+    })();
+  }, [selectedId]);
+
+  useEffect(() => {
+    document.title = `Movie | ${movie.Title}`;
+    return () => {
+      document.title = "Cinema Chronicle";
+      console.log(`Cleanup function run for title ${movie.Title}`); // Closure since it executes after the component is unmounted
+    };
+  }, [movie.Title]);
+
+  useEffect(() => {
+    if (rating) ratedCount.current++;
+  }, [rating]);
+
+  useEffect(() => {
+    function escapeCallback(e) {
+      if (e.code === "Escape") {
+        setSelectedId("");
+        console.log("closing");
+      }
+    }
+    document.addEventListener("keydown", escapeCallback);
+    return () => {
+      document.removeEventListener("keydown", escapeCallback);
+    };
+  }, []);
+
+  function addMovieToWatchList() {
+    const moviesDetail = {
+      imdbID: movie.imdbID,
+      Title: movie.Title,
+      Year: movie.Year,
+      runtime: +movie.Runtime.split(" ")[0],
+      imdbRating: +movie.imdbRating,
+      userRating: rating,
+      Poster: movie.Poster,
+      ratedCount: ratedCount.current,
+    };
+    setWatched((watched) => [...watched, moviesDetail]);
+    // localStorage.setItem("watched", JSON.stringify([...watched, moviesDetail]));
+    setSelectedId("");
+  }
+
   return (
-    <li key={movie.imdbID}>
+    <div className="details">
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <header>
+            <button
+              className="btn-back"
+              onClick={() => {
+                setSelectedId("");
+              }}
+            >
+              ←
+            </button>
+            <img src={movie.Poster} />
+            <div className="details-overview">
+              <h2>{movie.Title}</h2>
+              <p>
+                {movie.Released} • {movie.Runtime}
+              </p>
+              <p>{movie.Genre}</p>
+              <p>
+                <span>⭐</span>
+                {movie.imdbRating} IMDb rating
+              </p>
+            </div>
+          </header>
+          <section>
+            <div className="rating">
+              <StarRating size={24} maxRating={10} onSetRating={setRating} />
+              {rating > 0 && (
+                <button className="btn-add" onClick={addMovieToWatchList}>
+                  + Add to list
+                </button>
+              )}
+            </div>
+            <p>{movie.Plot}</p>
+            <p>Starring: {movie.Actors}</p>
+            <p>Directed: {movie.Director}</p>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ListItem({ movie, setSelectedId }) {
+  return (
+    <li onClick={() => setSelectedId(movie.imdbID)}>
       <img src={movie.Poster} alt={`${movie.Title} poster`} />
       <h3>{movie.Title}</h3>
       <div>
